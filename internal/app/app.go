@@ -1,5 +1,8 @@
 package app
 
+import "github.com/VIWET/TestTaskSoftConstruct/internal/server"
+
 func Run() error {
-	return nil
+	s := server.New()
+	return s.Run()
 }
