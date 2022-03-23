@@ -48,17 +48,20 @@ Loop:
 			r.Players[player] = true
 		case player := <-r.LeaveChan:
 			delete(r.Players, player)
+			close(player.Send)
 			if len(r.Players) == 0 {
 				break Loop
 			}
-			close(player.Send)
 		case msg := <-r.MessageChan:
+			m, _ := Unmarshal(msg)
 			for p := range r.Players {
-				select {
-				case p.Send <- msg:
-				default:
-					delete(r.Players, p)
-					close(p.Send)
+				if m.Sender != p {
+					select {
+					case p.Send <- msg:
+					default:
+						delete(r.Players, p)
+						close(p.Send)
+					}
 				}
 			}
 		}
