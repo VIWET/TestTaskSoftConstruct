@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -41,16 +40,17 @@ func NewRoom(game Game) *Room {
 	}
 }
 
-func (r *Room) Run() {
-	log.Printf("running chat room %v", r.UUID)
+func (r *Room) Run(deleteChan chan *Room) {
+Loop:
 	for {
 		select {
 		case player := <-r.JoinChan:
-			log.Printf("new player in room %v", r.UUID)
 			r.Players[player] = true
 		case player := <-r.LeaveChan:
-			log.Printf("chatter player room %v", r.UUID)
 			delete(r.Players, player)
+			if len(r.Players) == 0 {
+				break Loop
+			}
 			close(player.Send)
 		case msg := <-r.MessageChan:
 			for p := range r.Players {
@@ -63,6 +63,7 @@ func (r *Room) Run() {
 			}
 		}
 	}
+	deleteChan <- r
 }
 
 func (room *Room) ServeHTTP(w http.ResponseWriter, r *http.Request) {
