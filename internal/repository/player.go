@@ -9,6 +9,7 @@ import (
 type PlayerRepository interface {
 	GetAllPlayers() ([]*domain.Player, error)
 	SetInGameStatus(id int, status int) error
+	GetPlayer(id int) (*domain.Player, error)
 }
 
 type playerRepository struct {
@@ -44,18 +45,20 @@ func (r *playerRepository) GetAllPlayers() ([]*domain.Player, error) {
 }
 
 func (r *playerRepository) SetInGameStatus(id int, status int) error {
-	res, err := r.db.Exec("UPDATE players SET in_game=? WHERE id=?", status, id)
+	_, err := r.db.Exec("UPDATE players SET in_game=? WHERE id=?", status, id)
 	if err != nil {
 		return err
 	}
 
-	c, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if c == 0 {
-		// TODO
-		return nil
-	}
 	return nil
+}
+
+func (r *playerRepository) GetPlayer(id int) (*domain.Player, error) {
+	p := &domain.Player{}
+	err := r.db.QueryRow("SELECT id, name FROM players WHERE id=?", id).Scan(&p.ID, &p.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return p, err
 }

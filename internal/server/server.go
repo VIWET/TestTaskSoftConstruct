@@ -70,9 +70,7 @@ func (s *server) Run() error {
 
 	s.playerRepository = repository.NewPlayerRepository(s.db)
 
-	s.router.HandleFunc("/", s.Index()).Methods("GET")
-	s.router.HandleFunc("/room", s.CreateRoom()).Methods("POST")
-	s.router.HandleFunc("/room/{uuid}", s.ConnectRoom())
+	s.setRoutes()
 
 	go s.ManageRooms()
 
@@ -106,4 +104,12 @@ func (s *server) configureDatabase() error {
 	s.db = db
 
 	return nil
+}
+
+func (s *server) setRoutes() {
+	s.router.HandleFunc("/", s.Index()).Methods("GET")
+	s.router.HandleFunc("/login/{userId}", s.Login()).Methods("GET")
+	s.router.HandleFunc("/logout", s.Middleware(s.Logout())).Methods("GET")
+	s.router.HandleFunc("/room", s.Middleware(s.CreateRoom())).Methods("POST")
+	s.router.HandleFunc("/room/{uuid}", s.Middleware(s.ConnectRoom()))
 }
