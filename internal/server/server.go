@@ -1,25 +1,30 @@
 package server
 
 import (
-	"encoding/json"
+	"database/sql"
+	"fmt"
 	"net/http"
 
 	"github.com/VIWET/TestTaskSoftConstruct/internal/domain"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type server struct {
+	config     *Config
 	router     *mux.Router
 	logger     *logrus.Logger
+	db         *sql.DB
 	rooms      map[*domain.Room]bool
 	games      []*domain.Game
 	createChan chan *domain.Room
 	deleteChan chan *domain.Room
 }
 
-func New() *server {
+func New(config *Config) *server {
 	return &server{
+		config: config,
 		router: mux.NewRouter(),
 		logger: logrus.New(),
 		rooms:  make(map[*domain.Room]bool),
@@ -51,81 +56,50 @@ func (s *server) ManageRooms() {
 }
 
 func (s *server) Run() error {
-	s.logger.Info("starting chat server on port 8080")
+	if err := s.configureLogger(); err != nil {
+		return err
+	}
+	s.logger.Info(fmt.Sprintf("logger configured on level: %s", s.config.LogLevel))
+
+	if err := s.configureDatabase(); err != nil {
+		return err
+	}
+	s.logger.Info(fmt.Sprintf("database on %s:%s", s.config.DatabaseConfig.Host, s.config.DatabaseConfig.Port))
+
 	s.router.HandleFunc("/", s.Index()).Methods("GET")
 	s.router.HandleFunc("/room", s.CreateRoom()).Methods("POST")
 	s.router.HandleFunc("/room/{uuid}", s.ConnectRoom())
 
 	go s.ManageRooms()
 
-	return http.ListenAndServe(":8080", s.router)
+	s.logger.Info(fmt.Sprintf("serving at http://localhost%s/", s.config.Addr))
+	return http.ListenAndServe(s.config.Addr, s.router)
 }
 
-func (s *server) CreateRoom() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		var game domain.Game
-		err := json.NewDecoder(r.Body).Decode(&game)
-		if err != nil {
-			return
-		}
-
-		room := domain.NewRoom(game)
-		s.createChan <- room
-
-		err = json.NewEncoder(w).Encode(room)
-		if err != nil {
-			return
-		}
+func (s *server) configureLogger() error {
+	level, err := logrus.ParseLevel(s.config.LogLevel)
+	if err != nil {
+		return err
 	}
+
+	s.logger.SetLevel(level)
+
+	return nil
 }
 
-func (s *server) Index() http.HandlerFunc {
-	type Responce struct {
-		Games []*domain.Game `json:"games"`
-		Rooms []*domain.Room `json:"rooms"`
+func (s *server) configureDatabase() error {
+	db, err := sql.Open("mysql", s.config.DatabaseConfig.GetConnectionString())
+	if err != nil {
+		s.logger.Fatal(err)
+		return err
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		var rooms []*domain.Room
-		for room := range s.rooms {
-			rooms = append(rooms, room)
-		}
-
-		err := json.NewEncoder(w).Encode(Responce{
-			Games: s.games,
-			Rooms: rooms,
-		})
-		if err != nil {
-			return
-		}
+	if err := db.Ping(); err != nil {
+		s.logger.Fatal(err)
+		return err
 	}
-}
 
-func (s *server) ConnectRoom() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		roomUUID, ok := mux.Vars(r)["uuid"]
-		if !ok {
-			return
-		}
+	s.db = db
 
-		var selectedRoom *domain.Room
-		for room := range s.rooms {
-			if room.UUID == roomUUID {
-				selectedRoom = room
-			}
-		}
-
-		if selectedRoom == nil {
-			return
-		}
-
-		if len(selectedRoom.Players) == 4 {
-			return
-		}
-
-		selectedRoom.ServeHTTP(w, r)
-	}
+	return nil
 }
