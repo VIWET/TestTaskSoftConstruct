@@ -5,7 +5,7 @@ import (
 )
 
 type Player struct {
-	UUID string          `json:"uuid"`
+	ID   int             `json:"id"`
 	Name string          `json:"name"`
 	Send chan []byte     `json:"-"`
 	Room *Room           `json:"-"`

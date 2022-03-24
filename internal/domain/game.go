@@ -1,6 +1,6 @@
 package domain
 
 type Game struct {
-	UUID  string `json:"uuid"`
+	ID    int    `json:"id"`
 	Title string `json:"title"`
 }

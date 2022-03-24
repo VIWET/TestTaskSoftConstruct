@@ -30,8 +30,9 @@ func (s *server) CreateRoom() http.HandlerFunc {
 
 func (s *server) Index() http.HandlerFunc {
 	type Responce struct {
-		Games []*domain.Game `json:"games"`
-		Rooms []*domain.Room `json:"rooms"`
+		Games   []*domain.Game   `json:"games"`
+		Rooms   []*domain.Room   `json:"rooms"`
+		Players []*domain.Player `json:"players"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -41,11 +42,19 @@ func (s *server) Index() http.HandlerFunc {
 			rooms = append(rooms, room)
 		}
 
-		err := json.NewEncoder(w).Encode(Responce{
-			Games: s.games,
-			Rooms: rooms,
+		players, err := s.playerRepository.GetAllPlayers()
+		if err != nil {
+			s.logger.Error(err)
+			return
+		}
+
+		err = json.NewEncoder(w).Encode(Responce{
+			Games:   s.games,
+			Rooms:   rooms,
+			Players: players,
 		})
 		if err != nil {
+			s.logger.Error(err)
 			return
 		}
 	}
@@ -73,6 +82,16 @@ func (s *server) ConnectRoom() http.HandlerFunc {
 			return
 		}
 
-		selectedRoom.ServeHTTP(w, r)
+		p := domain.Player{
+			ID: 1,
+		}
+
+		err := s.playerRepository.SetInGameStatus(p.ID, 1)
+		if err != nil {
+			s.logger.Error(err)
+		}
+		defer s.playerRepository.SetInGameStatus(p.ID, 0)
+
+		selectedRoom.ServeHTTP(w, r, &p)
 	}
 }

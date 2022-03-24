@@ -6,20 +6,22 @@ import (
 	"net/http"
 
 	"github.com/VIWET/TestTaskSoftConstruct/internal/domain"
+	"github.com/VIWET/TestTaskSoftConstruct/internal/repository"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 type server struct {
-	config     *Config
-	router     *mux.Router
-	logger     *logrus.Logger
-	db         *sql.DB
-	rooms      map[*domain.Room]bool
-	games      []*domain.Game
-	createChan chan *domain.Room
-	deleteChan chan *domain.Room
+	config           *Config
+	router           *mux.Router
+	logger           *logrus.Logger
+	db               *sql.DB
+	playerRepository repository.PlayerRepository
+	rooms            map[*domain.Room]bool
+	games            []*domain.Game
+	createChan       chan *domain.Room
+	deleteChan       chan *domain.Room
 }
 
 func New(config *Config) *server {
@@ -30,11 +32,11 @@ func New(config *Config) *server {
 		rooms:  make(map[*domain.Room]bool),
 		games: []*domain.Game{
 			{
-				UUID:  "1",
+				ID:    1,
 				Title: "1",
 			},
 			{
-				UUID:  "2",
+				ID:    2,
 				Title: "2",
 			},
 		},
@@ -65,6 +67,8 @@ func (s *server) Run() error {
 		return err
 	}
 	s.logger.Info(fmt.Sprintf("database on %s:%s", s.config.DatabaseConfig.Host, s.config.DatabaseConfig.Port))
+
+	s.playerRepository = repository.NewPlayerRepository(s.db)
 
 	s.router.HandleFunc("/", s.Index()).Methods("GET")
 	s.router.HandleFunc("/room", s.CreateRoom()).Methods("POST")

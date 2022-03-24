@@ -69,17 +69,15 @@ Loop:
 	deleteChan <- r
 }
 
-func (room *Room) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (room *Room) ServeHTTP(w http.ResponseWriter, r *http.Request, p *Player) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
 
-	p := &Player{
-		Conn: conn,
-		Send: make(chan []byte, messageBufferSize),
-		Room: room,
-	}
+	p.Conn = conn
+	p.Room = room
+	p.Send = make(chan []byte)
 
 	room.JoinChan <- p
 	defer func() {
