@@ -4,7 +4,6 @@ import (
 	"flag"
 
 	"github.com/VIWET/TestTaskSoftConstruct/internal/app"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -16,8 +15,5 @@ func init() {
 }
 
 func main() {
-	if err := app.Run(configPath); err != nil {
-		logrus.Error(err)
-		return
-	}
+	app.Run(configPath)
 }

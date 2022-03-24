@@ -1,9 +1,11 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/VIWET/TestTaskSoftConstruct/internal/domain"
 	"github.com/VIWET/TestTaskSoftConstruct/internal/repository"
@@ -13,6 +15,7 @@ import (
 )
 
 type server struct {
+	httpServer       *http.Server
 	config           *Config
 	router           *mux.Router
 	logger           *logrus.Logger
@@ -63,10 +66,23 @@ func (s *server) Run() error {
 
 	s.setRoutes()
 
+	s.configureServer()
+
 	go s.ManageRooms()
 
 	s.logger.Info(fmt.Sprintf("serving at http://localhost%s/", s.config.Addr))
-	return http.ListenAndServe(s.config.Addr, s.router)
+
+	return s.httpServer.ListenAndServe()
+}
+
+func (s *server) configureServer() {
+	s.httpServer = &http.Server{
+		Addr:           s.config.Addr,
+		Handler:        s.router,
+		MaxHeaderBytes: 1 << 20,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+	}
 }
 
 func (s *server) configureLogger() error {
@@ -98,9 +114,28 @@ func (s *server) configureDatabase() error {
 }
 
 func (s *server) setRoutes() {
-	s.router.HandleFunc("/", s.Index()).Methods("GET")
-	s.router.HandleFunc("/login/{userId}", s.Login()).Methods("GET")
-	s.router.HandleFunc("/logout", s.Middleware(s.Logout())).Methods("GET")
-	s.router.HandleFunc("/room", s.Middleware(s.CreateRoom())).Methods("POST")
-	s.router.HandleFunc("/room/{uuid}", s.Middleware(s.ConnectRoom()))
+	s.router.Handle("/", s.Index()).Methods("GET")
+	s.router.Handle("/login/{userId}", s.Login()).Methods("GET")
+	s.router.Handle("/logout", s.Middleware(s.Logout())).Methods("GET")
+	s.router.Handle("/room", s.Middleware(s.CreateRoom())).Methods("POST")
+	s.router.Handle("/room/{uuid}", s.Middleware(s.ConnectRoom()))
+}
+
+func (s *server) Shutdown(ctx context.Context) error {
+	err := s.httpServer.Shutdown(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.playerRepository.DropInGameStatus()
+	if err != nil {
+		return err
+	}
+
+	err = s.db.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

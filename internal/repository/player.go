@@ -9,6 +9,7 @@ import (
 type PlayerRepository interface {
 	GetAllPlayers() ([]*domain.Player, error)
 	SetInGameStatus(id int, status int) error
+	DropInGameStatus() error
 	GetPlayer(id int) (*domain.Player, error)
 }
 
@@ -46,6 +47,15 @@ func (r *playerRepository) GetAllPlayers() ([]*domain.Player, error) {
 
 func (r *playerRepository) SetInGameStatus(id int, status int) error {
 	_, err := r.db.Exec("UPDATE players SET in_game=? WHERE id=?", status, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *playerRepository) DropInGameStatus() error {
+	_, err := r.db.Exec("UPDATE players SET in_game=FALSE")
 	if err != nil {
 		return err
 	}
