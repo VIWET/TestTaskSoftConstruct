@@ -15,13 +15,20 @@ func (s *server) CreateRoom() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		var game domain.Game
+		game := &domain.Game{}
 		err := json.NewDecoder(r.Body).Decode(&game)
 		if err != nil {
+			s.logger.Error(err)
 			return
 		}
 
-		room := domain.NewRoom(game)
+		game, err = s.gameRepository.GetGame(game.ID)
+		if err != nil {
+			s.logger.Error(err)
+			return
+		}
+
+		room := domain.NewRoom(*game)
 		s.createChan <- room
 
 		err = json.NewEncoder(w).Encode(room)
@@ -51,8 +58,14 @@ func (s *server) Index() http.HandlerFunc {
 			return
 		}
 
+		games, err := s.gameRepository.GetAllGames()
+		if err != nil {
+			s.logger.Error(err)
+			return
+		}
+
 		err = json.NewEncoder(w).Encode(Responce{
-			Games:   s.games,
+			Games:   games,
 			Rooms:   rooms,
 			Players: players,
 		})

@@ -60,5 +60,5 @@ func (r *playerRepository) GetPlayer(id int) (*domain.Player, error) {
 		return nil, err
 	}
 
-	return p, err
+	return p, nil
 }

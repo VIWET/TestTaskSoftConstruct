@@ -18,28 +18,18 @@ type server struct {
 	logger           *logrus.Logger
 	db               *sql.DB
 	playerRepository repository.PlayerRepository
+	gameRepository   repository.GameRepository
 	rooms            map[*domain.Room]bool
-	games            []*domain.Game
 	createChan       chan *domain.Room
 	deleteChan       chan *domain.Room
 }
 
 func New(config *Config) *server {
 	return &server{
-		config: config,
-		router: mux.NewRouter(),
-		logger: logrus.New(),
-		rooms:  make(map[*domain.Room]bool),
-		games: []*domain.Game{
-			{
-				ID:    1,
-				Title: "1",
-			},
-			{
-				ID:    2,
-				Title: "2",
-			},
-		},
+		config:     config,
+		router:     mux.NewRouter(),
+		logger:     logrus.New(),
+		rooms:      make(map[*domain.Room]bool),
 		createChan: make(chan *domain.Room),
 		deleteChan: make(chan *domain.Room),
 	}
@@ -69,6 +59,7 @@ func (s *server) Run() error {
 	s.logger.Info(fmt.Sprintf("database on %s:%s", s.config.DatabaseConfig.Host, s.config.DatabaseConfig.Port))
 
 	s.playerRepository = repository.NewPlayerRepository(s.db)
+	s.gameRepository = repository.NewGameRepository(s.db)
 
 	s.setRoutes()
 
