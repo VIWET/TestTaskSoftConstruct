@@ -11,6 +11,7 @@ func (s *server) Middleware(next http.HandlerFunc) http.HandlerFunc {
 		c, err := r.Cookie("UserID")
 		if err != nil {
 			s.logger.Error(err)
+			errorRespond(w, r, http.StatusUnauthorized, err)
 			return
 		}
 
