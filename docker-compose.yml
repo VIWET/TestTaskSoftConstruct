@@ -1,45 +1,51 @@
-version: '3.8'
+version: '3.3'
 
 services:
   db:
+    container_name: db
     image: mysql:latest
     restart: always
     networks:
-      new:
-        aliases:
-          - database
+      - new
     environment:
       MYSQL_DATABASE: 'game_chat_db'
       MYSQL_USER: 'game_chat'
       MYSQL_PASSWORD: 'password'
       MYSQL_ROOT_PASSWORD: 'password'
+    volumes:
+      - my-db:/var/lib/mysql
     ports:
       - '3306:3306'
     expose:
       - '3306'
-    volumes:
-      - my-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "database"]
+      timeout: 20s
+      retries: 10
   
-  migarte:
+  migrate:
+    container_name: migrate
     image: migrate/migrate
+    restart: on-failure
     networks:
       - new
-    command: migrate -path migrations -database "mysql://game_chat:password@tcp(database:3306)/game_chat_db" up
-    links:
-      - db
+    volumes:
+      - ./migrations:/migrations
+    command: -path=/migrations -database "mysql://game_chat:password@tcp(db:3306)/game_chat_db" up
     depends_on:
       - db
 
   app:
-    build:
-      dockerfile: Dockerfile
-      context: .
-      target: dev
+    container_name: app
+    build: .
+    restart: on-failure
+    networks:
+      - new
     ports:
       - "8080:8080"
     depends_on:
-      - migrate
       - db
+      - migrate
 
 volumes:
   my-db:
