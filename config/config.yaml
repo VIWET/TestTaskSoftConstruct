@@ -2,7 +2,7 @@ addr: ":8080"
 logLevel: "debug"
 
 db:
-  host: "localhost"
+  host: "db"
   port: "3306"
   database: "game_chat_db"
   user: "game_chat"
