@@ -47,10 +47,15 @@ A service is implemented by goLang using socket as a client.
 
 3. Next you can test API with Postman (Unfortunately, I didn't have enough time to make the front-end for the service and create swagger documenation)
 
-## API
+## **API**
 
-* `localhost:8080/` - return list of available players, rooms and games (`GET`)
-* `localhost:8080/login/{number}` - set UserID cookie to authentication (`POST`) 
-* `localhost:8080/logout` - delete UserID cookie (need UserID cookie) (`POST`)
-* `localhost:8080/room` - create room with game. (need UserID cookie and JSON in body {"id":"%game_id%"}) (`POST`)
-* `localhost:8080/room/uuid` - connect to the room (websocket) 
+* `localhost:8080/` - (`GET`) return list of available players, rooms and games 
+* `localhost:8080/login/{number}` - (`POST`) set UserID cookie to authentication, where 'number' - player's id  
+* `localhost:8080/logout` - (`POST`) delete UserID cookie (need UserID cookie) 
+* `localhost:8080/room` - (`POST`) create room with game. (need UserID cookie and JSON in body 
+    ```
+    {
+        "id": "game_id"
+    }
+    ``` 
+* `localhost:8080/room/uuid` - (`websocket connection`) connect to the room 
