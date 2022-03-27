@@ -10,6 +10,7 @@ import (
 	"github.com/VIWET/TestTaskSoftConstruct/internal/domain"
 	"github.com/VIWET/TestTaskSoftConstruct/internal/repository"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -77,8 +78,13 @@ func (s *server) Run() error {
 
 func (s *server) configureServer() {
 	s.httpServer = &http.Server{
-		Addr:           s.config.Addr,
-		Handler:        s.router,
+		Addr: s.config.Addr,
+		Handler: handlers.CORS(
+			handlers.AllowedOrigins([]string{"http://localhost:3000"}),
+			handlers.AllowedMethods([]string{"POST", "GET", "HEAD", "OPTIONS"}),
+			handlers.AllowedHeaders([]string{"Authorization", "Content-Type"}),
+			handlers.AllowCredentials(),
+		)(s.router),
 		MaxHeaderBytes: 1 << 20,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -114,9 +120,9 @@ func (s *server) configureDatabase() error {
 }
 
 func (s *server) setRoutes() {
-	s.router.Handle("/", s.Index()).Methods("GET")
-	s.router.Handle("/login/{userId}", s.Login()).Methods("GET")
-	s.router.Handle("/logout", s.Middleware(s.Logout())).Methods("GET")
+	s.router.Handle("/info", s.Index()).Methods("GET")
+	s.router.Handle("/login/{userId}", s.Login()).Methods("POST")
+	s.router.Handle("/logout", s.Middleware(s.Logout())).Methods("POST")
 	s.router.Handle("/room", s.Middleware(s.CreateRoom())).Methods("POST")
 	s.router.Handle("/room/{uuid}", s.Middleware(s.ConnectRoom()))
 }
