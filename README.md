@@ -49,9 +49,8 @@ A service is implemented by goLang using socket as a client.
 
 ## API
 
-* `localhost:8080/` - return list of available players, rooms and games
-* `localhost:8080/login/{number}` - set UserID cookie to authentication
-* `localhost:8080/logout` - delete UserID cookie (need UserID cookie)
-* `localhost:8080/room` - create room with game. (need UserID cookie and JSON in body {"id":"%game_id%"})
-* `localhost:8080/room/uuid` - connect to the room (websocket)
-* `localhost:8080/logout` - delete UserID cookie (need UserID cookie)
+* `localhost:8080/` - return list of available players, rooms and games (`GET`)
+* `localhost:8080/login/{number}` - set UserID cookie to authentication (`POST`) 
+* `localhost:8080/logout` - delete UserID cookie (need UserID cookie) (`POST`)
+* `localhost:8080/room` - create room with game. (need UserID cookie and JSON in body {"id":"%game_id%"}) (`POST`)
+* `localhost:8080/room/uuid` - connect to the room (websocket) 

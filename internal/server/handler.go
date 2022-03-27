@@ -165,6 +165,8 @@ func (s *server) Login() http.HandlerFunc {
 			return
 		}
 
+		s.logger.Info("LOGIN", userID)
+
 		id, err := strconv.Atoi(userID)
 		if err != nil {
 			s.logger.Error(err)
@@ -191,6 +193,7 @@ func (s *server) Login() http.HandlerFunc {
 		}
 
 		http.SetCookie(w, &c)
+		respond(w, r, http.StatusOK, userID)
 	}
 }
 
